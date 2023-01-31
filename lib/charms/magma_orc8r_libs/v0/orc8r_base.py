@@ -2,6 +2,7 @@
 # See LICENSE file for licensing details.
 
 """# Orc8rBase Library.
+
 This library is designed to enable developers to easily create new charms for Magma orc8r. This
 library contains all the logic necessary to wait for necessary relations and be deployed.
 When initialised, this library binds a handler to the parent charm's `pebble_ready`
@@ -46,13 +47,14 @@ provides:
 
 import logging
 
-from ops.charm import CharmBase
+from ops.charm import CharmBase, PebbleReadyEvent
 from ops.framework import Object
 from ops.model import (
     ActiveStatus,
     BlockedStatus,
     MaintenanceStatus,
     ModelError,
+    Relation,
     WaitingStatus,
 )
 from ops.pebble import Layer
@@ -65,20 +67,23 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 11
+LIBPATCH = 13
 
 
 logger = logging.getLogger(__name__)
 
 
 class Orc8rBase(Object):
+    """Instantiated by Orchestrator charms."""
+
     def __init__(
         self,
         charm: CharmBase,
         startup_command: str,
-        required_relations: list = None,
-        additional_environment_variables: dict = None,
+        required_relations: list = None,  # type: ignore[assignment]
+        additional_environment_variables: dict = None,  # type: ignore[assignment]
     ):
+        """Observes common events for all Orchestrator charms."""
         super().__init__(charm, "orc8r-base")
         self.charm = charm
         self.startup_command = startup_command
@@ -106,16 +111,17 @@ class Orc8rBase(Object):
         else:
             self.additional_environment_variables = {}
 
-    def _on_magma_orc8r_pebble_ready(self, event):
+    def _on_magma_orc8r_pebble_ready(self, event: PebbleReadyEvent):
+        if not self._relations_created:
+            event.defer()
+            return
         if not self._relations_ready:
             event.defer()
             return
         self._configure_orc8r(event)
 
     def _configure_orc8r(self, event):
-        """
-        Adds layer to pebble config if the proposed config is different from the current one
-        """
+        """Adds layer to pebble config if the proposed config is different from the current one."""
         if self.container.can_connect():
             self.charm.unit.status = MaintenanceStatus("Configuring pod")
             pebble_layer = self._pebble_layer()
@@ -162,6 +168,7 @@ class Orc8rBase(Object):
 
     @property
     def namespace(self) -> str:
+        """Returns Kubernetes namespace."""
         return self.charm.model.name
 
     def _update_relations(self):
@@ -193,7 +200,7 @@ class Orc8rBase(Object):
                 pass
         return False
 
-    def _update_relation_active_status(self, relation, is_active: bool):
+    def _update_relation_active_status(self, relation: Relation, is_active: bool):
         relation.data[self.charm.unit].update(
             {
                 "active": str(is_active),
@@ -201,23 +208,33 @@ class Orc8rBase(Object):
         )
 
     @property
+    def _relations_created(self) -> bool:
+        """Checks whether required relations are created."""
+        if missing_relations := [
+            relation
+            for relation in self.required_relations
+            if not self.model.get_relation(relation)
+        ]:
+            msg = f"Waiting for relation(s) to be created: {', '.join(missing_relations)}"
+            self.charm.unit.status = BlockedStatus(msg)
+            return False
+        return True
+
+    @property
     def _relations_ready(self) -> bool:
         """Checks whether required relations are ready."""
         if missing_relations := [
             relation for relation in self.required_relations if not self._relation_active(relation)
         ]:
-            msg = f"Waiting for relations: {', '.join(missing_relations)}"
-            self.charm.unit.status = BlockedStatus(msg)
+            msg = f"Waiting for relation(s) to be ready: {', '.join(missing_relations)}"
+            self.charm.unit.status = WaitingStatus(msg)
             return False
         return True
 
     def _relation_active(self, relation_name: str) -> bool:
         try:
-            relation = self.model.get_relation(relation_name)
-            if relation:
-                units = relation.units
-                return relation.data[next(iter(units))]["active"] == "True"
-            else:
-                return False
-        except (KeyError, StopIteration):
+            rel = self.model.get_relation(relation_name)
+            units = rel.units  # type: ignore[union-attr]
+            return rel.data[next(iter(units))]["active"] == "True"  # type: ignore[union-attr]
+        except (AttributeError, KeyError, StopIteration):
             return False

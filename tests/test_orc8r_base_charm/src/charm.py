@@ -3,21 +3,22 @@
 # See LICENSE file for licensing details.
 
 from charms.magma_orc8r_libs.v0.orc8r_base import Orc8rBase
-from charms.observability_libs.v0.kubernetes_service_patch import KubernetesServicePatch
+from charms.observability_libs.v1.kubernetes_service_patch import (
+    KubernetesServicePatch,
+    ServicePort,
+)
 from ops.charm import CharmBase
 
 
 class MagmaOrc8rDummyCharm(CharmBase):
-    """Charm the service."""
+    """An instance of this object everytime an event occurs."""
 
     def __init__(self, *args):
-        """
-        An instance of this object everytime an event occurs
-        """
+        """Uses the Orc8rBase library to manage events."""
         super().__init__(*args)
         self._service_patcher = KubernetesServicePatch(
             charm=self,
-            ports=[("grpc", 9180, 9119)],
+            ports=[ServicePort(name="grpc", port=9180, targetPort=9119)],
             additional_labels={"app.kubernetes.io/part-of": "orc8r-app"},
         )
         startup_command = (
@@ -31,16 +32,14 @@ class MagmaOrc8rDummyCharm(CharmBase):
 
 
 class MagmaOrc8rDummyCharmWithRequiredRelation(CharmBase):
-    """Charm the service."""
+    """An instance of this object everytime an event occurs."""
 
     def __init__(self, *args):
-        """
-        An instance of this object everytime an event occurs
-        """
+        """Uses the Orc8rBase library to manage events."""
         super().__init__(*args)
         self._service_patcher = KubernetesServicePatch(
             charm=self,
-            ports=[("grpc", 9180, 9119)],
+            ports=[ServicePort(name="grpc", port=9180, targetPort=9119)],
             additional_labels={"app.kubernetes.io/part-of": "orc8r-app"},
         )
         startup_command = (
