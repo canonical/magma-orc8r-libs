@@ -1,0 +1,32 @@
+name: Upload orc8r-libs
+
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  charmhub-upload:
+    runs-on: ubuntu-latest
+    name: Charmhub upload orc8r-libs
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: canonical/charmhub-upload-action@0.2.1
+        with:
+          credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
+          upload-image: "false"
+
+      - name: Publish libs
+        env:
+          CHARMCRAFT_AUTH: "${{ secrets.CHARMCRAFT_AUTH }}"
+        run: |
+          set -eux
+          orc8r_libs="
+          charms.magma_orc8r_libs.v0.orc8r_base 
+          charms.magma_orc8r_libs.v0.orc8r_base_db
+          "
+          for lib in ${orc8r_libs}; do
+            echo "Publishing ${lib}"
+            (charmcraft publish-lib ${lib})
+          done
