@@ -14,7 +14,6 @@ from test_orc8r_base_db_charm.src.charm import (  # type: ignore[import]
 
 
 class TestCharm(unittest.TestCase):
-
     TEST_DB_NAME = Orc8rBase.DB_NAME
     TEST_DB_PORT = "1234"
     TEST_DB_CONNECTION_STRING = ConnectionString(
