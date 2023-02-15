@@ -85,7 +85,7 @@ LIBAPI = 0
 
 # Increment this PATCH version before using `charmcraft publish-lib` or reset
 # to 0 if you are raising the major API version
-LIBPATCH = 13
+LIBPATCH = 14
 
 
 logger = logging.getLogger(__name__)
@@ -163,7 +163,7 @@ class Orc8rBase(Object):
                 self.container.restart(self.service_name)
                 logger.info(f"Restarted container {self.service_name}")
                 self._update_relations()
-                self.charm.unit.status = ActiveStatus()
+            self.charm.unit.status = ActiveStatus()
         else:
             self.charm.unit.status = WaitingStatus("Waiting for container to be ready...")
             event.defer()
