@@ -1,4 +1,4 @@
-name: Upload orc8r-libs
+name: Publish libs
 
 on:
   push:
@@ -6,16 +6,20 @@ on:
       - "main"
 
 jobs:
-  charmhub-upload:
+  publish:
     runs-on: ubuntu-22.04
     name: Charmhub upload orc8r-libs
     steps:
       - uses: actions/checkout@v2
-
-      - uses: canonical/charmhub-upload-action@0.2.1
+      - name: Select Charmhub channel
+        uses: canonical/charming-actions/channel@2.2.2
+        id: channel
+      - uses: canonical/charming-actions/upload-charm@2.2.2
         with:
           credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
           upload-image: "false"
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+          channel: "${{ steps.channel.outputs.name }}"
 
       - name: Publish libs
         env:
