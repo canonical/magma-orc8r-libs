@@ -46,8 +46,14 @@ provides:
 
 
 import logging
+from typing import Union
 
-from ops.charm import CharmBase, PebbleReadyEvent
+from ops.charm import (
+    CharmBase,
+    PebbleReadyEvent,
+    RelationJoinedEvent,
+    UpgradeCharmEvent,
+)
 from ops.framework import Object
 from ops.model import (
     ActiveStatus,
@@ -104,27 +110,56 @@ class Orc8rBase(Object):
             self.charm.on, f"{service_name_with_underscores}_pebble_ready"
         )
         self.container = self.charm.unit.get_container(self.container_name)
-        self.framework.observe(pebble_ready_event, self._on_magma_orc8r_pebble_ready)
+        self.framework.observe(pebble_ready_event, self._configure_workload)
+        self.framework.observe(self.charm.on.upgrade_charm, self._configure_workload)
 
         if additional_environment_variables:
             self.additional_environment_variables = additional_environment_variables
         else:
             self.additional_environment_variables = {}
 
-    def _on_magma_orc8r_pebble_ready(self, event: PebbleReadyEvent):
+    def _configure_workload(self, event: Union[PebbleReadyEvent, UpgradeCharmEvent]) -> None:
+        """If all required relations are ready, configures workload.
+
+        Args:
+            event: Juju event (PebbleReadyEvent or UpgradeCharmEvent)
+        """
         if not self._relations_created:
             event.defer()
             return
         if not self._relations_ready:
             event.defer()
             return
-        self._configure_orc8r(event)
+        self._configure_charm(event)
 
-    def _configure_orc8r(self, event):
-        """Adds layer to pebble config if the proposed config is different from the current one."""
+    def _on_relation_joined(self, event: RelationJoinedEvent) -> None:
+        """Triggered whenever a requirer charm joins the relation provided this charm.
+
+        When requirer charm joins the relation, the provider charm sets its workload service
+        status in the relation data bag. This allows the requirer charm to know if its
+        dependency is ready or not.
+
+        Args:
+            event: Juju event (RelationJoinedEvent)
+        """
+        if not self.charm.unit.is_leader():
+            return
+        self._update_relation_active_status(
+            relation=event.relation, is_active=self._service_is_running
+        )
+        if not self._service_is_running:
+            event.defer()
+            return
+
+    def _configure_charm(self, event: Union[PebbleReadyEvent, UpgradeCharmEvent]) -> None:
+        """Adds layer to pebble config if the proposed config is different from the current one.
+
+        Args:
+            event: Juju event (PebbleReadyEvent or UpgradeCharmEvent)
+        """
         if self.container.can_connect():
             self.charm.unit.status = MaintenanceStatus("Configuring pod")
-            pebble_layer = self._pebble_layer()
+            pebble_layer = self._pebble_layer
             plan = self.container.get_plan()
             if plan.services != pebble_layer.services:
                 self.container.add_layer(self.container_name, pebble_layer, combine=True)
@@ -136,8 +171,68 @@ class Orc8rBase(Object):
             self.charm.unit.status = WaitingStatus("Waiting for container to be ready...")
             event.defer()
 
+    def _update_relations(self) -> None:
+        """Updates relation provided by the charm with the workload service status."""
+        if not self.charm.unit.is_leader():
+            return
+        relations = self.charm.model.relations[self.charm.meta.name]
+        for relation in relations:
+            self._update_relation_active_status(
+                relation=relation, is_active=self._service_is_running
+            )
+
+    def _update_relation_active_status(self, relation: Relation, is_active: bool) -> None:
+        """Updates service status in the relation data bag.
+
+        Args:
+            relation: Juju Relation object to update
+            is_active: Workload service status
+        """
+        relation.data[self.charm.unit].update(
+            {
+                "active": str(is_active),
+            }
+        )
+
+    @property
+    def _relations_created(self) -> bool:
+        """Checks whether required relations are created.
+
+        Returns:
+            bool: Whether the required relations are created
+        """
+        if missing_relations := [
+            relation
+            for relation in self.required_relations
+            if not self.model.get_relation(relation)
+        ]:
+            msg = f"Waiting for relation(s) to be created: {', '.join(missing_relations)}"
+            self.charm.unit.status = BlockedStatus(msg)
+            return False
+        return True
+
+    @property
+    def _relations_ready(self) -> bool:
+        """Checks whether required relations are ready.
+
+        Returns:
+            bool: Whether required relations are ready
+        """
+        if missing_relations := [
+            relation for relation in self.required_relations if not self._relation_active(relation)
+        ]:
+            msg = f"Waiting for relation(s) to be ready: {', '.join(missing_relations)}"
+            self.charm.unit.status = WaitingStatus(msg)
+            return False
+        return True
+
+    @property
     def _pebble_layer(self) -> Layer:
-        """Returns pebble layer for the charm."""
+        """Returns pebble layer for the charm.
+
+        Returns:
+            Layer: Pebble Layer
+        """
         return Layer(
             {
                 "summary": f"{self.service_name} layer",
@@ -155,7 +250,12 @@ class Orc8rBase(Object):
         )
 
     @property
-    def _environment_variables(self):
+    def _environment_variables(self) -> dict:
+        """A set of environment variables required by the workload service.
+
+        Returns:
+            dict: Required environment variables
+        """
         environment_variables = {}
         default_environment_variables = {
             "SERVICE_HOSTNAME": self.container_name,
@@ -166,32 +266,26 @@ class Orc8rBase(Object):
         environment_variables.update(default_environment_variables)
         return environment_variables
 
-    @property
-    def namespace(self) -> str:
-        """Returns Kubernetes namespace."""
-        return self.charm.model.name
+    def _relation_active(self, relation_name: str) -> bool:
+        """Returns whether a given relation is active or not.
 
-    def _update_relations(self):
-        if not self.charm.unit.is_leader():
-            return
-        relations = self.charm.model.relations[self.charm.meta.name]
-        for relation in relations:
-            self._update_relation_active_status(
-                relation=relation, is_active=self._service_is_running
-            )
-
-    def _on_relation_joined(self, event):
-        if not self.charm.unit.is_leader():
-            return
-        self._update_relation_active_status(
-            relation=event.relation, is_active=self._service_is_running
-        )
-        if not self._service_is_running:
-            event.defer()
-            return
+        Args:
+            relation_name (str): Juju relation name
+        """
+        try:
+            rel = self.model.get_relation(relation_name)
+            units = rel.units  # type: ignore[union-attr]
+            return rel.data[next(iter(units))]["active"] == "True"  # type: ignore[union-attr]
+        except (AttributeError, KeyError, StopIteration):
+            return False
 
     @property
     def _service_is_running(self) -> bool:
+        """Retrieves the workload service and returns whether it is running.
+
+        Returns:
+            bool: Whether service is running
+        """
         if self.container.can_connect():
             try:
                 self.container.get_service(self.service_name)
@@ -200,41 +294,11 @@ class Orc8rBase(Object):
                 pass
         return False
 
-    def _update_relation_active_status(self, relation: Relation, is_active: bool):
-        relation.data[self.charm.unit].update(
-            {
-                "active": str(is_active),
-            }
-        )
-
     @property
-    def _relations_created(self) -> bool:
-        """Checks whether required relations are created."""
-        if missing_relations := [
-            relation
-            for relation in self.required_relations
-            if not self.model.get_relation(relation)
-        ]:
-            msg = f"Waiting for relation(s) to be created: {', '.join(missing_relations)}"
-            self.charm.unit.status = BlockedStatus(msg)
-            return False
-        return True
+    def namespace(self) -> str:
+        """Returns Kubernetes namespace.
 
-    @property
-    def _relations_ready(self) -> bool:
-        """Checks whether required relations are ready."""
-        if missing_relations := [
-            relation for relation in self.required_relations if not self._relation_active(relation)
-        ]:
-            msg = f"Waiting for relation(s) to be ready: {', '.join(missing_relations)}"
-            self.charm.unit.status = WaitingStatus(msg)
-            return False
-        return True
-
-    def _relation_active(self, relation_name: str) -> bool:
-        try:
-            rel = self.model.get_relation(relation_name)
-            units = rel.units  # type: ignore[union-attr]
-            return rel.data[next(iter(units))]["active"] == "True"  # type: ignore[union-attr]
-        except (AttributeError, KeyError, StopIteration):
-            return False
+        Returns:
+            str: Kubernetes namespace
+        """
+        return self.charm.model.name
