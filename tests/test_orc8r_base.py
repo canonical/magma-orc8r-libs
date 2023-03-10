@@ -193,7 +193,7 @@ class TestCharmWithRequiredRelation(unittest.TestCase):
 
         patch_defer.assert_called()
 
-    def test_given_relation_created_but_not_ready_when_upgrade_charm_then_status_is_blocked(self):
+    def test_given_relation_created_but_not_ready_when_upgrade_charm_then_status_is_waiting(self):
         relation_id = self.harness.add_relation("magma-orc8r-whatever", "remote-app")
         self.harness.add_relation_unit(relation_id, "remote-app/0")
 

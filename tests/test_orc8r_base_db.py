@@ -82,7 +82,7 @@ class TestCharm(unittest.TestCase):
         self,
     ):
         db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
-        key_values = {"master": self.TEST_DB_CONNECTION_STRING.__str__()}
+        key_values = {"master": str(self.TEST_DB_CONNECTION_STRING)}
         self.harness.update_relation_data(
             relation_id=db_relation_id, key_values=key_values, app_or_unit="postgresql-k8s"
         )
@@ -121,7 +121,7 @@ class TestCharm(unittest.TestCase):
     @patch("psycopg2.connect", new=Mock())
     def test_given_pebble_plan_not_yet_set_when_pebble_ready_then_status_is_active(self):
         db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
-        key_values = {"master": self.TEST_DB_CONNECTION_STRING.__str__()}
+        key_values = {"master": str(self.TEST_DB_CONNECTION_STRING)}
         self.harness.update_relation_data(
             relation_id=db_relation_id, key_values=key_values, app_or_unit="postgresql-k8s"
         )
@@ -136,7 +136,7 @@ class TestCharm(unittest.TestCase):
         self, patch_get_plan
     ):
         db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
-        key_values = {"master": self.TEST_DB_CONNECTION_STRING.__str__()}
+        key_values = {"master": str(self.TEST_DB_CONNECTION_STRING)}
         self.harness.update_relation_data(
             relation_id=db_relation_id, key_values=key_values, app_or_unit="postgresql-k8s"
         )
@@ -169,7 +169,7 @@ class TestCharm(unittest.TestCase):
     @patch("psycopg2.connect", new=Mock())
     def test_db_relation_added_when_get_status_then_status_is_active(self):
         db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
-        key_values = {"master": self.TEST_DB_CONNECTION_STRING.__str__()}
+        key_values = {"master": str(self.TEST_DB_CONNECTION_STRING)}
         self.harness.update_relation_data(
             relation_id=db_relation_id, key_values=key_values, app_or_unit="postgresql-k8s"
         )
@@ -196,7 +196,7 @@ class TestCharm(unittest.TestCase):
         self.harness.set_can_connect("magma-orc8r-dummy", True)
         container = self.harness.model.unit.get_container("magma-orc8r-dummy")
         db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
-        key_values = {"master": self.TEST_DB_CONNECTION_STRING.__str__()}
+        key_values = {"master": str(self.TEST_DB_CONNECTION_STRING)}
         self.harness.update_relation_data(
             relation_id=db_relation_id, key_values=key_values, app_or_unit="postgresql-k8s"
         )
@@ -214,7 +214,7 @@ class TestCharm(unittest.TestCase):
         self,
     ):
         db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
-        key_values = {"master": self.TEST_DB_CONNECTION_STRING.__str__()}
+        key_values = {"master": str(self.TEST_DB_CONNECTION_STRING)}
         self.harness.update_relation_data(
             relation_id=db_relation_id, key_values=key_values, app_or_unit="postgresql-k8s"
         )
@@ -294,7 +294,7 @@ class TestCharm(unittest.TestCase):
         patched_check_call.return_value = "whatever"
         self.harness.set_can_connect("magma-orc8r-dummy", True)
         db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
-        key_values = {"master": self.TEST_DB_CONNECTION_STRING.__str__()}
+        key_values = {"master": str(self.TEST_DB_CONNECTION_STRING)}
         self.harness.update_relation_data(
             relation_id=db_relation_id, key_values=key_values, app_or_unit="postgresql-k8s"
         )

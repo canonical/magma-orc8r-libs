@@ -113,10 +113,7 @@ class Orc8rBase(Object):
         self.framework.observe(pebble_ready_event, self._configure_workload)
         self.framework.observe(self.charm.on.upgrade_charm, self._configure_workload)
 
-        if additional_environment_variables:
-            self.additional_environment_variables = additional_environment_variables
-        else:
-            self.additional_environment_variables = {}
+        self.additional_environment_variables = additional_environment_variables or {}
 
     def _configure_workload(self, event: Union[PebbleReadyEvent, UpgradeCharmEvent]) -> None:
         """If all required relations are ready, configures workload.
