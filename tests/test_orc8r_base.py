@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 
 import yaml
 from ops import testing
-from ops.model import ActiveStatus
+from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.pebble import Plan
 from test_orc8r_base_charm.src.charm import (  # type: ignore[import]
     MagmaOrc8rDummyCharm,
@@ -168,3 +168,52 @@ class TestCharmWithRequiredRelation(unittest.TestCase):
         self.harness.charm.on.magma_orc8r_dummy_pebble_ready.emit(event)
 
         patch_defer.assert_called()
+
+    @patch("ops.charm.UpgradeCharmEvent.defer")
+    def test_given_relation_is_not_created_when_upgrade_charm_then_event_is_deferred(
+        self, patch_defer
+    ):
+        self.harness.charm.on.upgrade_charm.emit()
+
+        patch_defer.assert_called()
+
+    def test_given_relation_is_not_created_when_upgrade_charm_then_status_is_blocked(self):
+        self.harness.charm.on.upgrade_charm.emit()
+
+        self.assertEqual(
+            self.harness.charm.unit.status,
+            BlockedStatus("Waiting for relation(s) to be created: magma-orc8r-whatever"),
+        )
+
+    @patch("ops.charm.UpgradeCharmEvent.defer")
+    def test_given_relation_created_but_not_ready_when_upgrade_charm_then_event_is_deferred(
+        self, patch_defer
+    ):
+        self.harness.charm.on.upgrade_charm.emit()
+
+        patch_defer.assert_called()
+
+    def test_given_relation_created_but_not_ready_when_upgrade_charm_then_status_is_waiting(self):
+        relation_id = self.harness.add_relation("magma-orc8r-whatever", "remote-app")
+        self.harness.add_relation_unit(relation_id, "remote-app/0")
+
+        self.harness.charm.on.upgrade_charm.emit()
+
+        self.assertEqual(
+            self.harness.charm.unit.status,
+            WaitingStatus("Waiting for relation(s) to be ready: magma-orc8r-whatever"),
+        )
+
+    def test_given_relation_created_and_ready_when_upgrade_charm_then_status_is_active(self):
+        self.harness.set_can_connect("magma-orc8r-dummy", True)
+        relation_id = self.harness.add_relation("magma-orc8r-whatever", "remote-app")
+        self.harness.add_relation_unit(relation_id, "remote-app/0")
+        self.harness.update_relation_data(
+            relation_id=relation_id,
+            app_or_unit="remote-app/0",
+            key_values={"active": "True"},
+        )
+
+        self.harness.charm.on.upgrade_charm.emit()
+
+        self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
