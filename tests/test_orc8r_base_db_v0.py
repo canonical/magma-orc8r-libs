@@ -10,7 +10,7 @@ from ops import testing
 from ops.model import ActiveStatus, BlockedStatus, WaitingStatus
 from ops.pebble import Plan
 from pgconnstr import ConnectionString  # type: ignore[import]
-from test_orc8r_base_db_charm.src.charm import (  # type: ignore[import]
+from test_orc8r_base_db_charm_v0.src.charm import (  # type: ignore[import]
     MagmaOrc8rDummyCharm,
 )
 
@@ -28,7 +28,7 @@ class TestCharm(unittest.TestCase):
     )
 
     @patch(
-        "test_orc8r_base_db_charm.src.charm.KubernetesServicePatch",
+        "test_orc8r_base_db_charm_v0.src.charm.KubernetesServicePatch",
         lambda charm, ports, additional_labels: None,
     )
     def setUp(self):
