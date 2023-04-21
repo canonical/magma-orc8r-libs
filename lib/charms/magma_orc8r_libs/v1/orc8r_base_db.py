@@ -1,4 +1,4 @@
-# Copyright 2021 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 """# Orc8rBaseDB Library.
@@ -15,14 +15,14 @@ To get started using the library, you just need to fetch the library using `char
 that you also need to add `ops-lib-pgsql` to your charm's `requirements.txt`.**
 ```shell
 cd some-charm
-charmcraft fetch-lib charms.magma_orc8r_libs.v0.orc8r_base_db
+charmcraft fetch-lib charms.magma_orc8r_libs.v1.orc8r_base_db
 echo <<-EOF >> requirements.txt
 ops-lib-pgsql
 EOF
 ```
 Then, to initialise the library:
 ```python
-from charms.magma_orc8r_libs.v0.orc8r_base_db import Orc8rBase
+from charms.magma_orc8r_libs.v1.orc8r_base_db import Orc8rBase
 from charms.observability_libs.v0.kubernetes_service_patch import KubernetesServicePatch
 from ops.charm import CharmBase
 from ops.main import main
@@ -182,7 +182,7 @@ class Orc8rBase(Object):
         """Adds layer to pebble config if the proposed config is different from the current one.
 
         Args:
-            event: Juju event (PebbleReadyEvent or RelationJoinedEvent)
+            event: Juju event (PebbleReadyEvent, UpgradeCharmEvent, DatabaseCreatedEvent)
         """
         if self.container.can_connect():
             self.charm.unit.status = MaintenanceStatus("Configuring pod")

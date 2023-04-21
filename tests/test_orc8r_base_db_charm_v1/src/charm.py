@@ -1,4 +1,4 @@
-# Copyright 2021 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 from charms.magma_orc8r_libs.v1.orc8r_base_db import Orc8rBase

@@ -1,4 +1,4 @@
-# Copyright 2021 Canonical Ltd.
+# Copyright 2023 Canonical Ltd.
 # See LICENSE file for licensing details.
 
 import unittest
@@ -72,7 +72,7 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(db_event.database, self.TEST_DB_NAME)
 
     @patch("psycopg2.connect", new=Mock())
-    def test_given_ready_when_get_plan_then_plan_is_filled_with_magma_orc8r_dummy_service_content(  # noqa: E501
+    def test_given_pebble_ready_when_get_plan_then_plan_is_filled_with_magma_orc8r_dummy_service_content(  # noqa: E501
         self,
     ):
         db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
@@ -83,7 +83,6 @@ class TestCharm(unittest.TestCase):
         )
 
         self.harness.container_pebble_ready("magma-orc8r-dummy")
-        self.maxDiff = None
 
         expected_plan = {
             "services": {
@@ -183,7 +182,7 @@ class TestCharm(unittest.TestCase):
             "Waiting for db relation to be created"
         )
 
-    def test_given_db_relation_not_ready_when_pebble_ready_then_status_is_blocked(self):
+    def test_given_db_relation_not_ready_when_pebble_ready_then_status_is_waiting(self):
         self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
         self.harness.container_pebble_ready(container_name="magma-orc8r-dummy")
         assert self.harness.charm.unit.status == WaitingStatus(
@@ -265,7 +264,7 @@ class TestCharm(unittest.TestCase):
         patch_defer.assert_called()
 
     @patch("subprocess.check_call")
-    def test_given_db_relation_not_ready_when_upgrade_charm_then_status_is_blocked(
+    def test_given_db_relation_not_ready_when_upgrade_charm_then_status_is_waiting(
         self, patched_check_call
     ):
         patched_check_call.return_value = "whatever"
