@@ -12,12 +12,12 @@ triggered. The constructor simply takes the following:
 - The startup command (str)
 ## Getting Started
 To get started using the library, you just need to fetch the library using `charmcraft`. **Note
-that you also need to add `ops-lib-pgsql` to your charm's `requirements.txt`.**
+that you also need to add `pgconnstr` to your charm's `requirements.txt`.**
 ```shell
 cd some-charm
 charmcraft fetch-lib charms.magma_orc8r_libs.v1.orc8r_base_db
 echo <<-EOF >> requirements.txt
-ops-lib-pgsql
+pgconnstr
 EOF
 ```
 Then, to initialise the library:
