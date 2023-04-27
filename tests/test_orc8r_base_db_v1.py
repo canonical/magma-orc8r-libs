@@ -99,7 +99,8 @@ class TestCharm(unittest.TestCase):
                         "DATABASE_SOURCE": f"dbname={self.TEST_DB_NAME} "
                         f"user={self.DATABASE_DATABAG['username']} "
                         f"password={self.DATABASE_DATABAG['password']} "
-                        f"host={self.DATABASE_DATABAG['endpoints']} "
+                        f"host={self.DATABASE_DATABAG['endpoints'].split(':')[0]} "
+                        f"port={self.DATABASE_DATABAG['endpoints'].split(':')[1]} "
                         f"sslmode=disable",
                         "SQL_DRIVER": "postgres",
                         "SQL_DIALECT": "psql",

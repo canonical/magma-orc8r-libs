@@ -226,6 +226,7 @@ class Orc8rBase(Object):
                 f"dbname='{self.DB_NAME}' "
                 f"user='{db_connection_string.user}' "
                 f"host='{db_connection_string.host}' "
+                f"port='{db_connection_string.port}' "
                 f"password='{db_connection_string.password}'"
             )
             return True
@@ -245,7 +246,8 @@ class Orc8rBase(Object):
                 "dbname": relation_data["database"],
                 "user": relation_data["username"],
                 "password": relation_data["password"],
-                "host": relation_data["endpoints"],
+                "host": relation_data["endpoints"].split(":")[0],
+                "port": relation_data["endpoints"].split(":")[1].split(",")[0],
             }
             return ConnectionString(**connection_info)
         except (AttributeError, KeyError):
@@ -328,6 +330,7 @@ class Orc8rBase(Object):
             f"user={self._get_db_connection_string.user} "
             f"password={self._get_db_connection_string.password} "
             f"host={self._get_db_connection_string.host} "
+            f"port={self._get_db_connection_string.port} "
             f"sslmode=disable",
             "SQL_DRIVER": "postgres",
             "SQL_DIALECT": "psql",
