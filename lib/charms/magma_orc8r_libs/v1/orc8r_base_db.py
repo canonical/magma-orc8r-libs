@@ -52,6 +52,15 @@ provides:
     interface: magma-orc8r-directoryd
 ```
 
+Charms that leverage this library also need to specify a `requires` relation in their
+`metadata.yaml` file. For example:
+
+```yaml
+requires:
+  database:
+    interface: postgresql_client
+```
+
 """
 
 import logging
@@ -129,9 +138,13 @@ class Orc8rBase(Object):
         else:
             self.additional_environment_variables = {}
 
-        self.db = DatabaseRequires(self.charm, relation_name="db", database_name=self.DB_NAME)
+        self.db = DatabaseRequires(
+            self.charm, relation_name="database", database_name=self.DB_NAME
+        )
         self.framework.observe(self.db.on.database_created, self._configure_workload)
-        self.framework.observe(self.charm.on.db_relation_broken, self._on_database_relation_broken)
+        self.framework.observe(
+            self.charm.on.database_relation_broken, self._on_database_relation_broken
+        )
         self.framework.observe(relation_joined_event, self._on_relation_joined)
 
     def _configure_workload(
@@ -142,12 +155,12 @@ class Orc8rBase(Object):
         Args:
             event: Juju event (PebbleReadyEvent or UpgradeCharmEvent)
         """
-        if not self._db_relation_created:
-            self.charm.unit.status = BlockedStatus("Waiting for db relation to be created")
+        if not self._database_relation_created:
+            self.charm.unit.status = BlockedStatus("Waiting for database relation to be created")
             event.defer()
             return
-        if not self._db_relation_ready:
-            self.charm.unit.status = WaitingStatus("Waiting for db relation to be ready")
+        if not self._database_relation_ready:
+            self.charm.unit.status = WaitingStatus("Waiting for database relation to be ready")
             event.defer()
             return
         self._configure_pebble(event)
@@ -174,7 +187,7 @@ class Orc8rBase(Object):
         Args:
             event (RelationJoinedEvent): Juju event
         """
-        self.charm.unit.status = BlockedStatus("Waiting for db relation to be created")
+        self.charm.unit.status = BlockedStatus("Waiting for database relation to be created")
 
     def _configure_pebble(
         self, event: Union[PebbleReadyEvent, UpgradeCharmEvent, DatabaseCreatedEvent]
@@ -209,7 +222,7 @@ class Orc8rBase(Object):
             )
 
     @property
-    def _db_relation_ready(self) -> bool:
+    def _database_relation_ready(self) -> bool:
         """Validates that database relation is ready.
 
         Validates that there is a relation, credentials have been passed and the database can be
@@ -254,13 +267,13 @@ class Orc8rBase(Object):
             return None
 
     @property
-    def _db_relation_created(self) -> bool:
+    def _database_relation_created(self) -> bool:
         """Checks whether required relations are ready.
 
         Returns:
             bool: Whether required relations are ready
         """
-        if not self.model.get_relation("db"):
+        if not self.model.get_relation("database"):
             return False
         return True
 

@@ -55,7 +55,9 @@ class TestCharm(unittest.TestCase):
         self, is_leader
     ):
         is_leader.return_value = True
-        db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+        db_relation_id = self.harness.add_relation(
+            relation_name="database", remote_app="postgresql-k8s"
+        )
         self.harness.update_relation_data(
             relation_id=db_relation_id,
             key_values=self.DATABASE_DATABAG,
@@ -75,7 +77,9 @@ class TestCharm(unittest.TestCase):
     def test_given_pebble_ready_when_get_plan_then_plan_is_filled_with_magma_orc8r_dummy_service_content(  # noqa: E501
         self,
     ):
-        db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+        db_relation_id = self.harness.add_relation(
+            relation_name="database", remote_app="postgresql-k8s"
+        )
         self.harness.update_relation_data(
             relation_id=db_relation_id,
             key_values=self.DATABASE_DATABAG,
@@ -116,7 +120,9 @@ class TestCharm(unittest.TestCase):
 
     @patch("psycopg2.connect", new=Mock())
     def test_given_pebble_plan_not_yet_set_when_pebble_ready_then_status_is_active(self):
-        db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+        db_relation_id = self.harness.add_relation(
+            relation_name="database", remote_app="postgresql-k8s"
+        )
         self.harness.update_relation_data(
             relation_id=db_relation_id,
             key_values=self.DATABASE_DATABAG,
@@ -132,7 +138,9 @@ class TestCharm(unittest.TestCase):
     def test_given_pebble_plan_already_set_when_pebble_ready_then_status_is_active(
         self, patch_get_plan
     ):
-        db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+        db_relation_id = self.harness.add_relation(
+            relation_name="database", remote_app="postgresql-k8s"
+        )
         self.harness.update_relation_data(
             relation_id=db_relation_id,
             key_values=self.DATABASE_DATABAG,
@@ -165,8 +173,10 @@ class TestCharm(unittest.TestCase):
         self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
 
     @patch("psycopg2.connect", new=Mock())
-    def test_db_relation_added_when_get_status_then_status_is_active(self):
-        db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+    def test_database_relation_added_when_get_status_then_status_is_active(self):
+        db_relation_id = self.harness.add_relation(
+            relation_name="database", remote_app="postgresql-k8s"
+        )
         self.harness.update_relation_data(
             relation_id=db_relation_id,
             key_values=self.DATABASE_DATABAG,
@@ -177,24 +187,26 @@ class TestCharm(unittest.TestCase):
 
         self.assertEqual(self.harness.charm.unit.status, ActiveStatus())
 
-    def test_given_db_relation_not_created_when_pebble_ready_then_status_is_blocked(self):
+    def test_given_database_relation_not_created_when_pebble_ready_then_status_is_blocked(self):
         self.harness.container_pebble_ready(container_name="magma-orc8r-dummy")
         assert self.harness.charm.unit.status == BlockedStatus(
-            "Waiting for db relation to be created"
+            "Waiting for database relation to be created"
         )
 
-    def test_given_db_relation_not_ready_when_pebble_ready_then_status_is_waiting(self):
-        self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+    def test_given_database_relation_not_ready_when_pebble_ready_then_status_is_waiting(self):
+        self.harness.add_relation(relation_name="database", remote_app="postgresql-k8s")
         self.harness.container_pebble_ready(container_name="magma-orc8r-dummy")
         assert self.harness.charm.unit.status == WaitingStatus(
-            "Waiting for db relation to be ready"
+            "Waiting for database relation to be ready"
         )
 
     @patch("psycopg2.connect", new=Mock())
-    def test_given_pebble_ready_when_db_relation_broken_then_status_is_blocked(self):
+    def test_given_pebble_ready_when_database_relation_broken_then_status_is_blocked(self):
         self.harness.set_can_connect("magma-orc8r-dummy", True)
         container = self.harness.model.unit.get_container("magma-orc8r-dummy")
-        db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+        db_relation_id = self.harness.add_relation(
+            relation_name="database", remote_app="postgresql-k8s"
+        )
         self.harness.update_relation_data(
             relation_id=db_relation_id,
             key_values=self.DATABASE_DATABAG,
@@ -206,14 +218,16 @@ class TestCharm(unittest.TestCase):
         self.harness.remove_relation(db_relation_id)
 
         assert self.harness.charm.unit.status == BlockedStatus(
-            "Waiting for db relation to be created"
+            "Waiting for database relation to be created"
         )
 
     @patch("psycopg2.connect", new=Mock())
     def test_given_magma_orc8r_dummy_service_running_when_metrics_magma_orc8r_dummy_relation_joined_event_emitted_then_active_key_in_relation_data_is_set_to_true(  # noqa: E501
         self,
     ):
-        db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+        db_relation_id = self.harness.add_relation(
+            relation_name="database", remote_app="postgresql-k8s"
+        )
         self.harness.update_relation_data(
             relation_id=db_relation_id,
             key_values=self.DATABASE_DATABAG,
@@ -242,7 +256,7 @@ class TestCharm(unittest.TestCase):
         )
 
     @patch("subprocess.check_call")
-    def test_given_db_relation_not_created_when_upgrade_charm_then_status_is_blocked(
+    def test_given_database_relation_not_created_when_upgrade_charm_then_status_is_blocked(
         self, patched_check_call
     ):
         patched_check_call.return_value = "whatever"
@@ -250,12 +264,12 @@ class TestCharm(unittest.TestCase):
         self.harness.charm.on.upgrade_charm.emit()
 
         assert self.harness.charm.unit.status == BlockedStatus(
-            "Waiting for db relation to be created"
+            "Waiting for database relation to be created"
         )
 
     @patch("ops.charm.UpgradeCharmEvent.defer")
     @patch("subprocess.check_call")
-    def test_given_db_relation_not_created_when_upgrade_charm_then_event_is_deferred(
+    def test_given_database_relation_not_created_when_upgrade_charm_then_event_is_deferred(
         self, patched_check_call, patch_defer
     ):
         patched_check_call.return_value = "whatever"
@@ -265,16 +279,16 @@ class TestCharm(unittest.TestCase):
         patch_defer.assert_called()
 
     @patch("subprocess.check_call")
-    def test_given_db_relation_not_ready_when_upgrade_charm_then_status_is_waiting(
+    def test_given_database_relation_not_ready_when_upgrade_charm_then_status_is_waiting(
         self, patched_check_call
     ):
         patched_check_call.return_value = "whatever"
-        self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+        self.harness.add_relation(relation_name="database", remote_app="postgresql-k8s")
 
         self.harness.charm.on.upgrade_charm.emit()
 
         assert self.harness.charm.unit.status == WaitingStatus(
-            "Waiting for db relation to be ready"
+            "Waiting for database relation to be ready"
         )
 
     @patch("ops.charm.UpgradeCharmEvent.defer")
@@ -283,7 +297,7 @@ class TestCharm(unittest.TestCase):
         self, patched_check_call, patch_defer
     ):
         patched_check_call.return_value = "whatever"
-        self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+        self.harness.add_relation(relation_name="database", remote_app="postgresql-k8s")
 
         self.harness.charm.on.upgrade_charm.emit()
 
@@ -291,10 +305,14 @@ class TestCharm(unittest.TestCase):
 
     @patch("psycopg2.connect", new=Mock())
     @patch("subprocess.check_call")
-    def test_db_relation_added_when_upgrade_charm_then_status_is_active(self, patched_check_call):
+    def test_database_relation_added_when_upgrade_charm_then_status_is_active(
+        self, patched_check_call
+    ):
         patched_check_call.return_value = "whatever"
         self.harness.set_can_connect("magma-orc8r-dummy", True)
-        db_relation_id = self.harness.add_relation(relation_name="db", remote_app="postgresql-k8s")
+        db_relation_id = self.harness.add_relation(
+            relation_name="database", remote_app="postgresql-k8s"
+        )
         self.harness.update_relation_data(
             relation_id=db_relation_id,
             key_values=self.DATABASE_DATABAG,
