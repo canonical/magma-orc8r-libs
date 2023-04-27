@@ -44,7 +44,7 @@ module = ["ops.*", "kubernetes.*", "flatten_json.*", "git.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["charms.observability_libs.*"]
+module = ["charms.observability_libs.*", "charms.data_platform_libs.*"]
 follow_imports = "silent"
 
 [tool.pytest.ini_options]
