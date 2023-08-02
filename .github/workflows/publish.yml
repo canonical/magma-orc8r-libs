@@ -12,9 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Select Charmhub channel
-        uses: canonical/charming-actions/channel@2.2.5
+        uses: canonical/charming-actions/channel@2.4.0
         id: channel
-      - uses: canonical/charming-actions/upload-charm@2.2.5
+      - uses: canonical/charming-actions/upload-charm@2.4.0
         with:
           credentials: "${{ secrets.CHARMCRAFT_AUTH }}"
           upload-image: "false"
