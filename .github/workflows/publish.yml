@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-22.04
     name: Charmhub upload orc8r-libs
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Select Charmhub channel
         uses: canonical/charming-actions/channel@2.2.5
         id: channel
